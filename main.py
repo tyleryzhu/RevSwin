@@ -12,6 +12,7 @@ import random
 import argparse
 import datetime
 import numpy as np
+import wandb
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -62,6 +63,8 @@ def parse_option():
     parser.add_argument('--tag', help='tag of experiment')
     parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
     parser.add_argument('--throughput', action='store_true', help='Test throughput only')
+    parser.add_argument('--wandb', default=None, type=str, help='Do wandb logging')
+    parser.add_argument('--wandb-id', default=None, type=int, help='Do wandb logging')
 
     # distributed training
     parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
@@ -84,7 +87,6 @@ def parse_option():
 def main(config):
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
 
-    logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config)
     logger.info(str(model))
 
@@ -159,6 +161,8 @@ def main(config):
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
+        if wandb.run is not None:
+            wandb.log({'epoch':epoch, 'test_acc1': acc1, 'test_acc5':acc5, 'test_loss': loss})
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -296,6 +300,12 @@ def throughput(data_loader, model, logger):
 if __name__ == '__main__':
     args, config = parse_option()
 
+    if args.wandb is not None:
+        if args.wandb_id is None:
+            wandb.init(project="swin", name=args.wandb, config=config)
+        else:
+            wandb.init(project="swin", name=args.wandb, id=args.wandb_id)
+
     if config.AMP_OPT_LEVEL:
         print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
 
@@ -336,7 +346,7 @@ if __name__ == '__main__':
     logger = create_logger(output_dir=config.OUTPUT, dist_rank=dist.get_rank(), name=f"{config.MODEL.NAME}")
 
     if dist.get_rank() == 0:
-        path = os.path.join(config.OUTPUT, "config.json")
+        path = os.path.join(config.OUTPUT, "config.yaml")
         with open(path, "w") as f:
             f.write(config.dump())
         logger.info(f"Full config saved to {path}")
