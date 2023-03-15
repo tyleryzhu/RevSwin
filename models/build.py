@@ -8,7 +8,7 @@
 from .swin_transformer import SwinTransformer
 from .swin_transformer_v2 import SwinTransformerV2
 from .swin_transformer_moe import SwinTransformerMoE
-from .reversible_swin import ReversibleSwinTransformer
+from .reversible_swin2 import ReversibleSwinTransformer
 from .swin_mlp import SwinMLP
 from .simmim import build_simmim
 
@@ -134,7 +134,9 @@ def build_model(config, is_pretrain=False):
                         norm_layer=layernorm,
                         patch_norm=config.MODEL.SWIN.PATCH_NORM,
                         use_checkpoint=config.TRAIN.USE_CHECKPOINT,
-                        fused_window_process=config.FUSED_WINDOW_PROCESS)
+                        fused_window_process=config.FUSED_WINDOW_PROCESS,
+                        lateral_fusion=config.MODEL.REV.LATERAL_FUSION,
+                        fast_backprop=config.MODEL.REV.FAST_BACKPROP)
     else:
         raise NotImplementedError(f"Unkown model: {model_type}")
 

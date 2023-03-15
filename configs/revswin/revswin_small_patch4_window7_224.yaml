@@ -1,11 +1,11 @@
 AMP_ENABLE: False
 MODEL:
   TYPE: revswin
-  NAME: revswin_tiny_patch4_window7_224
-  NICKNAME: Ti
-  DROP_PATH_RATE: 0.2
+  NAME: revswin_small_patch4_window7_224
+  NICKNAME: S
+  DROP_PATH_RATE: 0.3
   SWIN:
     EMBED_DIM: 96
-    DEPTHS: [ 2, 2, 6, 2 ]
+    DEPTHS: [ 2, 2, 18, 2 ]
     NUM_HEADS: [ 3, 6, 12, 24 ]
     WINDOW_SIZE: 7

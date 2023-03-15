@@ -13,6 +13,7 @@ import argparse
 import datetime
 import numpy as np
 import wandb
+from filelock import FileLock
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -28,7 +29,7 @@ from lr_scheduler import build_scheduler
 from optimizer import build_optimizer
 from logger import create_logger
 from utils import load_checkpoint, load_pretrained, save_checkpoint, NativeScalerWithGradNormCount, auto_resume_helper, \
-    reduce_tensor
+    reduce_tensor, AverageStdMeter
 
 
 def parse_option():
@@ -144,7 +145,10 @@ def main(config):
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
 
     if config.THROUGHPUT_MODE:
-        throughput(data_loader_val, model, logger)
+        epoch = config.TRAIN.START_EPOCH
+        logger.info("Start throughput test")
+        train_one_epoch(config, model, criterion, data_loader_train, optimizer, epoch, mixup_fn, lr_scheduler,
+                        loss_scaler)
         return
 
     logger.info("Start training")
@@ -176,6 +180,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
 
     num_steps = len(data_loader)
     batch_time = AverageMeter()
+    throughput_meter = AverageStdMeter()
     loss_meter = AverageMeter()
     norm_meter = AverageMeter()
     scaler_meter = AverageMeter()
@@ -211,23 +216,36 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             norm_meter.update(grad_norm)
         scaler_meter.update(loss_scale_value)
         batch_time.update(time.time() - end)
+        if idx >= 50 and idx < 100: # warm for 50itr, then run for 50itr
+            batch_size = samples.size(0)
+            throughput_meter.update(batch_size / (time.time() - end))
         end = time.time()
 
         if idx % config.PRINT_FREQ == 0:
             lr = optimizer.param_groups[0]['lr']
             wd = optimizer.param_groups[0]['weight_decay']
-            memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
+            memory_used = torch.cuda.max_memory_reserved() / (1024.0 * 1024.0)
             etas = batch_time.avg * (num_steps - idx)
             logger.info(
                 f'Train: [{epoch}/{config.TRAIN.EPOCHS}][{idx}/{num_steps}]\t'
                 f'eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t wd {wd:.4f}\t'
-                f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
                 f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
+                f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
                 f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
                 f'loss_scale {scaler_meter.val:.4f} ({scaler_meter.avg:.4f})\t'
                 f'mem {memory_used:.0f}MB')
+        if idx == 79:
+            break
     epoch_time = time.time() - start
+    batch_size = config.DATA.BATCH_SIZE
     logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
+    logger.info(f"world size {dist.get_world_size()}")
+    mem = torch.cuda.max_memory_reserved() / (1024.0 * 1024.0 * 1024.0)
+    logger.info(f"mem used: {mem:.2f}GB")
+    logger.info(f"batch_size {batch_size} throughput {throughput_meter.avg:.2f} (std {throughput_meter.std:.3f}) ")
+    rev_type = "FastBP" if config.MODEL.REV.FAST_BACKPROP else "Vanilla"
+    with FileLock(config.OUTPUT_THR, 'a+') as f:
+        f.write(f"{config.MODEL.NICKNAME},{rev_type},{batch_size},{mem:2f},{dist.get_world_size()},{throughput_meter.avg:.2f},{throughput_meter.std:.3f}\n")
 
 
 @torch.no_grad()

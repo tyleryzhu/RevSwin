@@ -64,6 +64,15 @@ _C.MODEL.DROP_RATE = 0.0
 _C.MODEL.DROP_PATH_RATE = 0.1
 # Label Smoothing
 _C.MODEL.LABEL_SMOOTHING = 0.1
+# Model Nickname
+_C.MODEL.NICKNAME = 'n/a'
+
+# Reversible Parameters
+_C.MODEL.REV = CN()
+# Lateral Fusion
+_C.MODEL.REV.LATERAL_FUSION = "avg"
+# Fast backprop
+_C.MODEL.REV.FAST_BACKPROP = False
 
 # Swin Transformer parameters
 _C.MODEL.SWIN = CN()
@@ -259,6 +268,8 @@ _C.LOCAL_RANK = 0
 # for acceleration
 _C.FUSED_WINDOW_PROCESS = False
 _C.FUSED_LAYERNORM = False
+# Throughput output file
+_C.OUTPUT_THR = 'swin_throughput.txt'
 
 
 def _update_config_from_file(config, cfg_file):

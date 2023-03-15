@@ -219,3 +219,44 @@ class NativeScalerWithGradNormCount:
 
     def load_state_dict(self, state_dict):
         self._scaler.load_state_dict(state_dict)
+
+class AverageStdMeter:
+    """Computes and stores the average and current value.
+    Added Std tracker too."""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+        self.m2 = 0
+        self.std = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        old_mean = self.avg
+        self.avg = self.sum / self.count
+        new_mean = self.avg
+        self.m2 += (val - old_mean) * (val - new_mean) * n
+        self.std = (self.m2 / self.count) ** 0.5
+
+class AverageMeter:
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count

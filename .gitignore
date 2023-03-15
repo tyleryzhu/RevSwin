@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 logs/
 output/
+slurm/
 
 # launch bash
 *.sh
