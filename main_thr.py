@@ -244,8 +244,10 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
     logger.info(f"mem used: {mem:.2f}GB")
     logger.info(f"batch_size {batch_size} throughput {throughput_meter.avg:.2f} (std {throughput_meter.std:.3f}) ")
     rev_type = "FastBP" if config.MODEL.REV.FAST_BACKPROP else "Vanilla"
-    with FileLock(config.OUTPUT_THR, 'a+') as f:
-        f.write(f"{config.MODEL.NICKNAME},{rev_type},{batch_size},{mem:2f},{dist.get_world_size()},{throughput_meter.avg:.2f},{throughput_meter.std:.3f}\n")
+    lock = FileLock(config.OUTPUT_THR + ".lock")
+    with lock:
+        with open(config.OUTPUT_THR, 'a+') as f:
+            f.write(f"{config.MODEL.NICKNAME},{rev_type},{batch_size},{mem:2f},{dist.get_world_size()},{throughput_meter.avg:.2f},{throughput_meter.std:.3f}\n")
 
 
 @torch.no_grad()
