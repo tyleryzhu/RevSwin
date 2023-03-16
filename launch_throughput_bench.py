@@ -20,10 +20,12 @@ python create_dataset.py --num_images 2000 --num_gpus 50 --start_idx 4000 --spli
 
 # bb: largest log bs
 backbones = {
-    "tiny": 8, 
-    "small": 8,
-    "base": 7, 
-    "large": 5,
+    # "tiny": 8, 
+    # "small": 8,
+    # "base": 7, 
+    # "large": 5,
+    "huge": 4, 
+    "giant": 3
 }
 
 

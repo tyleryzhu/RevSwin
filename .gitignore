@@ -8,7 +8,7 @@ slurm/
 *.lock
 
 # launch bash
-*.sh
+
 # nsight system report files
 *.nsys-rep
 *.sqlite
