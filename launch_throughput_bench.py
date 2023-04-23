@@ -19,13 +19,22 @@ python create_dataset.py --num_images 2000 --num_gpus 50 --start_idx 4000 --spli
 # args = parser.parse_args()
 
 # bb: largest log bs
-backbones = {
-    # "tiny": 8, 
-    # "small": 8,
-    # "base": 7, 
-    # "large": 5,
-    "huge": 4, 
-    "giant": 3
+# backbones = { # em clusteer
+#     # "tiny": 8, 
+#     # "small": 8,
+#     # "base": 7, 
+#     # "large": 5,
+#     "huge": 4, 
+#     "giant": 3
+# }
+
+backbones = { # em12 cluster
+    "tiny": 10, 
+    "small": 10,
+    "base": 9, 
+    "large": 8,
+    "huge": 8, 
+    "giant": 6 
 }
 
 

@@ -224,7 +224,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
         if idx % config.PRINT_FREQ == 0:
             lr = optimizer.param_groups[0]['lr']
             wd = optimizer.param_groups[0]['weight_decay']
-            memory_used = torch.cuda.max_memory_reserved() / (1024.0 * 1024.0)
+            memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
             etas = batch_time.avg * (num_steps - idx)
             logger.info(
                 f'Train: [{epoch}/{config.TRAIN.EPOCHS}][{idx}/{num_steps}]\t'
@@ -240,10 +240,15 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
     batch_size = config.DATA.BATCH_SIZE
     logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
     logger.info(f"world size {dist.get_world_size()}")
-    mem = torch.cuda.max_memory_reserved() / (1024.0 * 1024.0 * 1024.0)
+    mem = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0 * 1024.0)
     logger.info(f"mem used: {mem:.2f}GB")
     logger.info(f"batch_size {batch_size} throughput {throughput_meter.avg:.2f} (std {throughput_meter.std:.3f}) ")
-    rev_type = "FastBP" if config.MODEL.REV.FAST_BACKPROP else "Vanilla"
+    if config.MODEL.TYPE == "swin":
+        rev_type = "NonRev BP"
+    elif config.MODEL.REV.FAST_BACKPROP:
+        rev_type = "FastBP"
+    else:
+        rev_type = "Vanilla"
     lock = FileLock(config.OUTPUT_THR + ".lock")
     with lock:
         with open(config.OUTPUT_THR, 'a+') as f:
