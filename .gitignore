@@ -6,6 +6,7 @@ logs/
 output/
 slurm/
 *.lock
+wandb/
 
 # launch bash
 

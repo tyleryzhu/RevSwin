@@ -304,9 +304,9 @@ if __name__ == '__main__':
 
     if args.wandb is not None:
         if args.wandb_id is None:
-            wandb.init(project="swin", name=args.wandb, config=config)
+            wandb.init(project="revswin", name=args.wandb, config=config)
         else:
-            wandb.init(project="swin", name=args.wandb, id=args.wandb_id)
+            wandb.init(project="revswin", name=args.wandb, id=args.wandb_id)
 
     if config.AMP_OPT_LEVEL:
         print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
