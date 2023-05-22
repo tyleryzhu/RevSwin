@@ -303,6 +303,12 @@ def throughput(data_loader, model, logger):
 if __name__ == '__main__':
     args, config = parse_option()
 
+    if args.wandb is not None:
+        if args.wandb_id is None:
+            wandb.init(project="revswin", name=args.wandb, config=config)
+        else:
+            wandb.init(project="revswin", name=args.wandb, id=args.wandb_id)
+
     if config.AMP_OPT_LEVEL:
         print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
 

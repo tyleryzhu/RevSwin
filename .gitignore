@@ -7,6 +7,7 @@ output/
 slurm/
 wandb/
 *.lock
+wandb/
 
 # launch bash
 
