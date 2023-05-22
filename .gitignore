@@ -5,6 +5,7 @@ __pycache__/
 logs/
 output/
 slurm/
+wandb/
 *.lock
 
 # launch bash

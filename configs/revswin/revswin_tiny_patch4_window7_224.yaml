@@ -9,3 +9,8 @@ MODEL:
     DEPTHS: [ 2, 2, 6, 2 ]
     NUM_HEADS: [ 3, 6, 12, 24 ]
     WINDOW_SIZE: 7
+TRAIN:
+  WEIGHT_DECAY: 0.05
+  BASE_LR: 1e-3 # 4096 batch-size
+  WARMUP_LR: 1e-6
+  MIN_LR: 1e-5

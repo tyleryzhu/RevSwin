@@ -101,7 +101,8 @@ def main(config):
     model_without_ddp = model
 
     optimizer = build_optimizer(config, model)
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False,
+                                                      find_unused_parameters=True)
     loss_scaler = NativeScalerWithGradNormCount()
 
     if config.TRAIN.ACCUMULATION_STEPS > 1:
@@ -162,7 +163,7 @@ def main(config):
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
-        if wandb.run is not None:
+        if wandb.run is not None and dist.get_rank() == 0:
             wandb.log({'epoch':epoch, 'test_acc1': acc1, 'test_acc5':acc5, 'test_loss': loss})
 
     total_time = time.time() - start_time
@@ -302,12 +303,6 @@ def throughput(data_loader, model, logger):
 if __name__ == '__main__':
     args, config = parse_option()
 
-    if args.wandb is not None:
-        if args.wandb_id is None:
-            wandb.init(project="swin", name=args.wandb, config=config)
-        else:
-            wandb.init(project="swin", name=args.wandb, id=args.wandb_id)
-
     if config.AMP_OPT_LEVEL:
         print("[warning] Apex amp has been deprecated, please use pytorch amp instead!")
 
@@ -328,6 +323,14 @@ if __name__ == '__main__':
     np.random.seed(seed)
     random.seed(seed)
     cudnn.benchmark = True
+
+    if args.wandb is not None:
+        if dist.get_rank() == 0:
+            if args.wandb_id is None:
+                wandb.init(project="swin", name=args.wandb, config=config)
+            else:
+                wandb.init(project="swin", name=args.wandb, id=args.wandb_id)
+
 
     # linear scale the learning rate according to total batch size, may not be optimal
     linear_scaled_lr = config.TRAIN.BASE_LR * config.DATA.BATCH_SIZE * dist.get_world_size() / 512.0
